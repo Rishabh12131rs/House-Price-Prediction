@@ -1,16 +1,13 @@
 from flask import Flask, render_template, request
 import pickle
 import numpy as np
+import requests # Need this for Reverse Geocoding
 import os
 
 app = Flask(__name__)
 
-# Load the Calibrated Model
-try:
-    with open('model.pkl', 'rb') as f:
-        model = pickle.load(f)
-except Exception as e:
-    print(f"❌ Model Load Error: {e}")
+with open('model.pkl', 'rb') as f:
+    model = pickle.load(f)
 
 @app.route('/')
 def home():
@@ -19,32 +16,44 @@ def home():
 @app.route('/predict', methods=['POST'])
 def predict():
     try:
-        # 1. Get inputs from the No-Refresh (AJAX) form
+        # 1. Capture basic numbers
         sqft = float(request.form.get('sqft', 0))
         beds = float(request.form.get('beds', 0))
         baths = float(request.form.get('baths', 0))
         prop_type = float(request.form.get('prop_type', 0))
         furnish = float(request.form.get('furnish', 0))
-        amenities = 1.0 if request.form.get('amenities') else 0.0
+        lat = request.form.get('lat')
+        lng = request.form.get('lng')
+
+        # 2. AUTOMATIC CITY DETECTION (Reverse Geocoding)
+        tier = 0 # Default to Rural/Village
+        if lat and lng:
+            # Call OpenStreetMap Nominatim API
+            geo_url = f"https://nominatim.openstreetmap.org/reverse?format=json&lat={lat}&lon={lng}"
+            headers = {'User-Agent': 'HousePriceApp/1.0'}
+            response = requests.get(geo_url, headers=headers).json()
+            
+            address = response.get('address', {})
+            city = address.get('city') or address.get('town') or address.get('village', '').lower()
+            
+            # Auto-assign tiers based on detected city
+            if any(x in city for x in ['indore', 'ahmedabad', 'mumbai', 'delhi']):
+                tier = 2 # Prime Tier
+            elif any(x in city for x in ['jabalpur', 'bhopal', 'gandhinagar']):
+                tier = 1 # Standard City Tier
         
-        # 2. Prepare for Prediction
-        features = np.array([[sqft, beds, baths, prop_type, furnish, amenities]])
-        
-        # 3. Calculate Price
+        # 3. Predict using the detected Tier
+        features = np.array([[sqft, beds, baths, tier, prop_type, furnish]])
         prediction = model.predict(features)
         val = prediction[0]
         
-        # Logic to prevent negative or tiny unrealistic values
-        if val < 5: val = sqft * 0.03 # Fallback to 3k per sqft minimum
-        
-        # 4. Format for Indian Users (Rupee Symbol + Lakh/Crore)
-        if val >= 100:
-            formatted_price = f"₹{round(val/100, 2)} Crore"
-        else:
-            formatted_price = f"₹{round(val, 2)} Lakh"
+        # Add a 10% premium for amenities
+        if request.form.get('amenities'): val *= 1.1
 
-        # Return ONLY the text string so JavaScript can update the UI
-        return f"Estimated Market Value: {formatted_price}"
+        # 4. Currency Formatting
+        res = f"₹{round(val/100, 2)} Crore" if val >= 100 else f"₹{round(val, 2)} Lakh"
+
+        return f"Location Detected: {city.title()} | Estimated Price: {res}"
 
     except Exception as e:
         return f"Error: {str(e)}"
