@@ -1,10 +1,10 @@
 from flask import Flask, render_template, request
 import pickle
 import numpy as np
+import matplotlib.pyplot as plt
+import io, base64, os
 
 app = Flask(__name__)
-
-# Load the trained model we created in Step 3
 model = pickle.load(open('model.pkl', 'rb'))
 
 @app.route('/')
@@ -13,42 +13,31 @@ def home():
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    # Get values from the HTML form
-    sqft = float(request.form['sqft'])
-    rooms = float(request.form['rooms'])
+    # Collect all 5 inputs from the form
+    input_data = [float(x) for x in request.form.values()]
+    features = [np.array(input_data)]
     
-    # Arrange them for the model
-    features = np.array([[sqft, rooms]])
-    
-    # Make prediction
     prediction = model.predict(features)
     output = round(prediction[0], 2)
 
-    return render_template('index.html', prediction_text=f'Estimated Price: ${output}')
-import matplotlib.pyplot as plt
-import io
-import base64
+    return render_template('index.html', prediction_text=f'Estimated Market Value: ${output:,}')
 
 @app.route('/visualize')
 def visualize():
-    # Simple data for the graph
-    sqft = [1000, 1500, 2000, 2500, 3000, 3500]
-    price = [100000, 150000, 200000, 230000, 300000, 350000]
+    # Simple trend visualization
+    sqft = [1000, 1500, 2000, 2500, 3000, 3500, 4000]
+    price = [120000, 180000, 210000, 290000, 340000, 320000, 450000]
+    plt.figure(figsize=(6,4), facecolor='#f8f9fc')
+    plt.scatter(sqft, price, color='#4e73df')
+    plt.plot(sqft, price, color='#e74a3b', linewidth=2)
+    plt.title('Price vs Square Footage Trend')
     
-    plt.figure(figsize=(6,4))
-    plt.scatter(sqft, price, color='blue', label='Actual Data')
-    plt.plot(sqft, price, color='red', label='Regression Line')
-    plt.xlabel('Square Feet')
-    plt.ylabel('Price ($)')
-    plt.title('House Price Trend')
-    plt.legend()
-    
-    # Save plot to a fake file in memory
     img = io.BytesIO()
-    plt.savefig(img, format='png')
+    plt.savefig(img, format='png', bbox_inches='tight')
     img.seek(0)
     plot_url = base64.b64encode(img.getvalue()).decode()
-    
     return render_template('index.html', plot_url=plot_url)
+
 if __name__ == "__main__":
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
