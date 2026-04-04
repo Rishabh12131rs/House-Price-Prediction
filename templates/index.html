@@ -3,42 +3,156 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI House Predictor</title>
+    <title>AI House Predictor | Minor Project</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        :root { --primary: #4e73df; --success: #1cc88a; --dark: #5a5c69; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f8f9fc; margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; }
-        .card { background: white; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 400px; padding: 40px; text-align: center; }
-        h2 { color: var(--dark); margin-bottom: 25px; font-weight: 600; }
+        :root { 
+            --primary: #4e73df; 
+            --success: #1cc88a; 
+            --secondary: #6c757d;
+            --dark: #5a5c69; 
+            --bg: #f8f9fc;
+        }
+
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: var(--bg); 
+            margin: 0; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .card { 
+            background: white; 
+            border-radius: 15px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
+            width: 100%;
+            max-width: 450px; 
+            padding: 40px; 
+            text-align: center; 
+        }
+
+        h2 { color: var(--dark); margin-bottom: 10px; font-weight: 600; }
+        p { color: #858796; margin-bottom: 25px; font-size: 14px; }
+
         .input-group { position: relative; margin-bottom: 20px; }
-        input { width: 100%; padding: 12px 40px; border: 2px solid #e3e6f0; border-radius: 10px; box-sizing: border-box; transition: 0.3s; font-size: 16px; }
-        input:focus { border-color: var(--primary); outline: none; }
-        .input-group i { position: absolute; left: 15px; top: 15px; color: #b7b9cc; }
-        button { width: 100%; background: var(--primary); color: white; padding: 14px; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        button:hover { background: #2e59d9; transform: translateY(-2px); }
-        .result { margin-top: 25px; padding: 15px; border-radius: 10px; background: #f1fcf7; color: var(--success); font-weight: bold; border: 1px solid #d1e7dd; }
+        
+        input { 
+            width: 100%; 
+            padding: 12px 45px; 
+            border: 2px solid #e3e6f0; 
+            border-radius: 10px; 
+            box-sizing: border-box; 
+            transition: 0.3s; 
+            font-size: 16px; 
+        }
+
+        input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 8px rgba(78,115,223,0.2); }
+        
+        .input-group i { 
+            position: absolute; 
+            left: 15px; 
+            top: 15px; 
+            color: #b7b9cc; 
+        }
+
+        .btn-predict { 
+            width: 100%; 
+            background: var(--primary); 
+            color: white; 
+            padding: 14px; 
+            border: none; 
+            border-radius: 10px; 
+            font-size: 16px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            transition: 0.3s; 
+            margin-bottom: 10px;
+        }
+
+        .btn-predict:hover { background: #2e59d9; transform: translateY(-2px); }
+
+        .btn-visualize {
+            width: 100%;
+            background: var(--secondary);
+            color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-visualize:hover { background: #5a6268; }
+
+        .result { 
+            margin-top: 25px; 
+            padding: 15px; 
+            border-radius: 10px; 
+            background: #f1fcf7; 
+            color: var(--success); 
+            font-weight: bold; 
+            border: 1px solid #d1e7dd;
+        }
+
+        .graph-container {
+            margin-top: 25px;
+            border-top: 1px solid #e3e6f0;
+            padding-top: 20px;
+        }
+
+        .graph-img {
+            width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
     </style>
 </head>
 <body>
+
     <div class="card">
-        <h2><i class="fas fa-home"></i> House Estimator</h2>
+        <h2><i class="fas fa-house-user"></i> House Estimator</h2>
+        <p>Predicting values using Linear Regression</p>
+
         <form action="/predict" method="post">
             <div class="input-group">
-                <i class="fas fa-expand-arrows-alt"></i>
+                <i class="fas fa-ruler-combined"></i>
                 <input type="number" name="sqft" placeholder="Total Square Feet" required>
             </div>
             <div class="input-group">
                 <i class="fas fa-bed"></i>
                 <input type="number" name="rooms" placeholder="Number of Bedrooms" required>
             </div>
-            <button type="submit">Calculate Valuation</button>
+            <button type="submit" class="btn-predict">Calculate Valuation</button>
         </form>
 
         {% if prediction_text %}
         <div class="result">
-            <i class="fas fa-chart-line"></i> {{ prediction_text }}
+            <i class="fas fa-tag"></i> {{ prediction_text }}
         </div>
         {% endif %}
+
+        <div class="graph-container">
+            <form action="/visualize" method="get">
+                <button type="submit" class="btn-visualize">
+                    <i class="fas fa-chart-area"></i> Show Market Analysis Graph
+                </button>
+            </form>
+
+            {% if plot_url %}
+            <div style="margin-top: 15px;">
+                <img src="data:image/png;base64,{{ plot_url }}" class="graph-img" alt="Regression Graph">
+                <p style="font-size: 12px; margin-top: 5px;">Red line shows the Linear Regression path.</p>
+            </div>
+            {% endif %}
+        </div>
     </div>
+
 </body>
 </html>
