@@ -2,32 +2,28 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Bharat Estate AI | Smart Locator</title>
+    <title>Bharat Estate AI | No-Refresh Predictor</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         body { margin: 0; font-family: 'Segoe UI', sans-serif; background: #0f172a; color: white; display: flex; justify-content: center; padding: 20px; }
         .container { width: 100%; max-width: 1000px; display: grid; grid-template-columns: 1fr 1.2fr; gap: 20px; }
-        .card { background: rgba(30, 41, 59, 0.8); padding: 25px; border-radius: 20px; border: 1px solid #334155; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        
-        /* Search Box Styling */
+        .card { background: rgba(30, 41, 59, 0.8); padding: 25px; border-radius: 20px; border: 1px solid #334155; }
         .search-container { position: relative; margin-bottom: 15px; display: flex; gap: 10px; }
         #city-search { flex-grow: 1; padding: 12px; border-radius: 8px; border: 1px solid #4e73df; background: #1e293b; color: white; }
-        .search-btn { padding: 10px 20px; background: #4e73df; border: none; border-radius: 8px; color: white; cursor: pointer; }
-
         #map { height: 400px; border-radius: 15px; border: 2px solid #334155; }
         .input-group { margin-bottom: 12px; }
         input, select { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #334155; background: #1e293b; color: white; box-sizing: border-box; }
-        .btn-predict { width: 100%; padding: 15px; background: #10b981; border: none; border-radius: 10px; color: white; font-weight: bold; cursor: pointer; font-size: 16px; transition: 0.3s; }
-        .btn-predict:hover { background: #059669; transform: scale(1.02); }
-        .result { margin-top: 15px; padding: 15px; background: rgba(78, 115, 223, 0.2); border: 1px solid #4e73df; border-radius: 10px; text-align: center; font-size: 22px; font-weight: bold; }
+        .btn-predict { width: 100%; padding: 15px; background: #10b981; border: none; border-radius: 10px; color: white; font-weight: bold; cursor: pointer; }
+        .result-box { display: none; margin-top: 15px; padding: 15px; background: rgba(78, 115, 223, 0.2); border: 1px solid #4e73df; border-radius: 10px; text-align: center; font-size: 22px; font-weight: bold; color: #fff; }
+        .loading { display: none; color: #4e73df; margin-top: 10px; }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="card">
             <h2><i class="fas fa-robot"></i> Price Predictor</h2>
-            <form action="/predict" method="post">
+            <form id="predictionForm">
                 <div class="input-group"><input type="number" name="sqft" placeholder="Total Area (Sq Ft)" required></div>
                 <div class="input-group"><input type="number" name="beds" placeholder="Bedrooms" required></div>
                 <div class="input-group"><input type="number" name="baths" placeholder="Bathrooms" required></div>
@@ -46,64 +42,65 @@
                     </select>
                 </div>
                 <div class="input-group">
-                    <label style="font-size: 13px;"><input type="checkbox" name="amenities"> Includes Modern Amenities (Pool/Gym)</label>
+                    <label style="font-size: 13px;"><input type="checkbox" name="amenities"> Modern Amenities</label>
                 </div>
-                
-                <input type="hidden" id="lat" name="lat">
-                <input type="hidden" id="lng" name="lng">
-
-                <button type="submit" class="btn-predict">Calculate Indian Market Value</button>
+                <button type="submit" class="btn-predict">Calculate Valuation</button>
             </form>
-            {% if prediction_text %}<div class="result">{{ prediction_text }}</div>{% endif %}
+            
+            <div id="loading" class="loading"><i class="fas fa-spinner fa-spin"></i> Analyzing Market...</div>
+            <div id="result" class="result-box"></div>
         </div>
 
         <div class="card">
             <h3><i class="fas fa-map-marker-alt"></i> Locate Property</h3>
             <div class="search-container">
-                <input type="text" id="city-search" placeholder="Type City (e.g. Jabalpur, Gujarat)">
-                <button class="search-btn" onclick="searchCity()"><i class="fas fa-search"></i></button>
+                <input type="text" id="city-search" placeholder="Search City...">
+                <button style="background:#4e73df; color:white; border:none; padding:10px; border-radius:8px;" onclick="searchCity()">Search</button>
             </div>
             <div id="map"></div>
-            <p style="font-size: 12px; color: #94a3b8; margin-top: 10px;">
-                1. Type City & Search <br> 2. Zoom in to your colony <br> 3. Click to pin the exact house
-            </p>
         </div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // Initial Map Setup (Default to India center)
-        var map = L.map('map').setView([20.5937, 78.9629], 5); 
+        // MAP LOGIC
+        var map = L.map('map').setView([22.9734, 78.6569], 5); 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
         var marker;
 
-        // Function to Search City and Move Map
         function searchCity() {
             var city = document.getElementById('city-search').value;
-            if(!city) return alert("Please type a city name");
-
             fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${city}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.length > 0) {
-                        var lat = data[0].lat;
-                        var lon = data[0].lon;
-                        map.flyTo([lat, lon], 14); // Zoom into the city
-                    } else {
-                        alert("City not found. Try adding state name (e.g. Jabalpur, MP)");
-                    }
+                .then(res => res.json()).then(data => {
+                    if(data.length > 0) map.flyTo([data[0].lat, data[0].lon], 14);
                 });
         }
 
-        // Handle Clicking on Map to Pin House
         map.on('click', function(e) {
             if(marker) map.removeLayer(marker);
             marker = L.marker(e.latlng).addTo(map);
-            
-            // Set hidden values for the form
-            document.getElementById('lat').value = e.latlng.lat;
-            document.getElementById('lng').value = e.latlng.lng;
         });
+
+        // PREDICTION LOGIC (AJAX - NO REFRESH)
+        document.getElementById('predictionForm').onsubmit = async (e) => {
+            e.preventDefault(); // This stops the page from refreshing!
+            
+            const formData = new FormData(e.target);
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('result').style.display = 'none';
+
+            const response = await fetch('/predict', {
+                method: 'POST',
+                body: formData
+            });
+
+            const resultText = await response.text();
+            // We extract the result from the returned HTML or change backend to JSON
+            // For now, let's update the backend to return just the text for simpler logic
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('result').innerHTML = resultText;
+            document.getElementById('result').style.display = 'block';
+        };
     </script>
 </body>
 </html>
