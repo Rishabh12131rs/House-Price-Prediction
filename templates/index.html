@@ -2,79 +2,69 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartPrice AI | Real Estate</title>
+    <title>Bharat Estate AI | Price Predictor</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        body { 
-            margin: 0; padding: 0; min-height: 100vh;
-            display: flex; align-items: center; justify-content: center;
-            font-family: 'Segoe UI', sans-serif;
-            /* Using a high-quality background image */
-            background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1200&q=80');
-            background-size: cover; background-position: center;
-        }
-        .glass-card {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 20px;
-            padding: 40px; width: 90%; max-width: 450px;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-            color: white; text-align: center;
-        }
-        .input-box { position: relative; margin-bottom: 15px; }
-        input, select {
-            width: 100%; padding: 12px 12px 12px 45px; border-radius: 10px;
-            border: 1px solid rgba(255,255,255,0.3);
-            background: rgba(255,255,255,0.1); color: white;
-            box-sizing: border-box; font-size: 14px; outline: none;
-        }
-        select option { background: #333; color: white; }
-        .input-box i { position: absolute; left: 15px; top: 15px; color: #4e73df; z-index: 1; }
-        .btn-main {
-            width: 100%; padding: 14px; border-radius: 10px; border: none;
-            background: #4e73df; color: white; font-weight: bold; 
-            cursor: pointer; transition: 0.3s; margin-top: 10px;
-        }
-        .btn-main:hover { background: #2e59d9; transform: translateY(-2px); }
-        .result-box {
-            margin-top: 20px; padding: 15px; border-radius: 10px;
-            background: rgba(28, 200, 138, 0.2); border: 1px solid #1cc88a;
-            font-weight: bold;
-        }
+        body { margin: 0; font-family: 'Segoe UI', sans-serif; background: #0f172a; color: white; display: flex; justify-content: center; padding: 20px; }
+        .container { width: 100%; max-width: 900px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .card { background: rgba(30, 41, 59, 0.7); padding: 30px; border-radius: 20px; border: 1px solid #334155; }
+        #map { height: 300px; border-radius: 15px; margin-bottom: 15px; border: 2px solid #4e73df; }
+        .input-group { margin-bottom: 15px; }
+        input, select { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #334155; background: #1e293b; color: white; }
+        .btn { width: 100%; padding: 15px; background: #4e73df; border: none; border-radius: 10px; color: white; font-weight: bold; cursor: pointer; }
+        .result { margin-top: 20px; padding: 15px; background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; border-radius: 10px; text-align: center; font-size: 20px; }
     </style>
 </head>
 <body>
-    <div class="glass-card">
-        <h2><i class="fas fa-home"></i> SmartPrice AI</h2>
-        <p>Advanced Real Estate Valuation</p>
-        
-        <form action="/predict" method="post">
-            <div class="input-box"><i class="fas fa-ruler-combined"></i><input type="number" name="sqft" placeholder="Total Area (Sq Ft)" required></div>
-            <div class="input-box"><i class="fas fa-bed"></i><input type="number" name="beds" placeholder="No. of Bedrooms" required></div>
-            
-            <div class="input-box">
-                <i class="fas fa-map-marker-alt"></i>
-                <select name="location">
-                    <option value="jabalpur">Jabalpur</option>
-                    <option value="gujarat">Gujarat</option>
-                    <option value="other">Other City</option>
-                </select>
-            </div>
+    <div class="container">
+        <div class="card">
+            <h2><i class="fas fa-indian-rupee-sign"></i> Predict Price</h2>
+            <form action="/predict" method="post">
+                <div class="input-group"><input type="number" name="sqft" placeholder="Area (Sq Ft)" required></div>
+                <div class="input-group"><input type="number" name="beds" placeholder="Bedrooms" required></div>
+                <div class="input-group"><input type="number" name="baths" placeholder="Bathrooms" required></div>
+                <div class="input-group">
+                    <select name="prop_type">
+                        <option value="0">Apartment / Flat</option>
+                        <option value="1">Independent House</option>
+                        <option value="2">Luxury Villa</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <select name="furnish">
+                        <option value="0">Unfurnished</option>
+                        <option value="1">Semi-Furnished</option>
+                        <option value="2">Fully Furnished</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label><input type="checkbox" name="amenities" value="1"> Includes Modern Amenities (Gym/Pool)</label>
+                </div>
+                <input type="hidden" id="lat" name="lat"><input type="hidden" id="lng" name="lng">
+                <button type="submit" class="btn">Get Valuation</button>
+            </form>
+            {% if prediction_text %}<div class="result">{{ prediction_text }}</div>{% endif %}
+        </div>
 
-            <div class="input-box">
-                <i class="fas fa-city"></i>
-                <select name="area_type">
-                    <option value="city">City Area</option>
-                    <option value="village">Village Area</option>
-                </select>
-            </div>
-
-            <button type="submit" class="btn-main">Calculate Valuation</button>
-        </form>
-
-        {% if prediction_text %}<div class="result-box">{{ prediction_text }}</div>{% endif %}
+        <div class="card">
+            <h3><i class="fas fa-map-marked-alt"></i> Select Location</h3>
+            <div id="map"></div>
+            <p style="font-size: 12px; color: #94a3b8;">Click on the map to pin your house location. This helps our AI analyze the area premium.</p>
+        </div>
     </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        var map = L.map('map').setView([23.1815, 79.9864], 13); // Default to Jabalpur
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        var marker;
+        map.on('click', function(e) {
+            if(marker) map.removeLayer(marker);
+            marker = L.marker(e.latlng).addTo(map);
+            document.getElementById('lat').value = e.latlng.lat;
+            document.getElementById('lng').value = e.latlng.lng;
+        });
+    </script>
 </body>
 </html>

@@ -1,9 +1,16 @@
 from flask import Flask, render_template, request
 import pickle
 import numpy as np
+import os
 
 app = Flask(__name__)
-model = pickle.load(open('model.pkl', 'rb'))
+
+# Load the updated 6-feature model
+# Make sure you ran 'python model.py' to generate the new pkl file!
+try:
+    model = pickle.load(open('model.pkl', 'rb'))
+except Exception as e:
+    print(f"Error loading model: {e}")
 
 @app.route('/')
 def home():
@@ -11,28 +18,40 @@ def home():
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    # 1. Get basic numbers
-    sqft = float(request.form['sqft'])
-    beds = float(request.form['beds'])
-    
-    # 2. Get Area Type (City/Village)
-    area_type = request.form['area_type']
-    is_city = 1 if area_type == 'city' else 0
-    
-    # 3. Get Location (One-Hot Encoding logic)
-    loc = request.form['location']
-    loc_jabalpur, loc_gujarat, loc_other = 0, 0, 0
-    if loc == 'jabalpur': loc_jabalpur = 1
-    elif loc == 'gujarat': loc_gujarat = 1
-    else: loc_other = 1
+    try:
+        # 1. Capture inputs from the modern form
+        sqft = float(request.form.get('sqft', 0))
+        beds = float(request.form.get('beds', 0))
+        baths = float(request.form.get('baths', 0))
+        prop_type = float(request.form.get('prop_type', 0)) # 0:Flat, 1:House, 2:Villa
+        furnish = float(request.form.get('furnish', 0))    # 0:Unfurnished, 1:Semi, 2:Full
+        
+        # Checkbox logic for amenities
+        amenities = 1.0 if request.form.get('amenities') else 0.0
+        
+        # 2. Prepare the array for the Machine Learning model
+        # The order MUST match your model.py features
+        features = np.array([[sqft, beds, baths, prop_type, furnish, amenities]])
+        
+        # 3. Make the prediction
+        prediction = model.predict(features)
+        val = prediction[0]
+        
+        # 4. Indian Currency Formatting (Lakhs & Crores)
+        if val >= 100:
+            # If 100 Lakhs or more, show in Crores
+            formatted_price = f"₹{round(val/100, 2)} Crore"
+        elif val > 0:
+            formatted_price = f"₹{round(val, 2)} Lakh"
+        else:
+            formatted_price = "Contact Agent for Price"
 
-    # 4. Combine all into one array
-    features = np.array([[sqft, beds, is_city, loc_jabalpur, loc_gujarat, loc_other]])
-    
-    prediction = model.predict(features)
-    output = round(prediction[0], 2)
+        return render_template('index.html', prediction_text=f'Estimated Market Price: {formatted_price}')
 
-    return render_template('index.html', prediction_text=f'Smart Valuation: ${output:,}')
+    except Exception as e:
+        return render_template('index.html', prediction_text=f"Error in Calculation: {str(e)}")
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    # This part is CRITICAL for Render deployment
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
