@@ -5,54 +5,50 @@ import os
 
 app = Flask(__name__)
 
-# Load the model (Ensuring it handles the 6 features: sqft, beds, baths, type, furnish, amenities)
+# Load the Calibrated Model
 try:
     with open('model.pkl', 'rb') as f:
         model = pickle.load(f)
 except Exception as e:
-    print(f"Model Load Error: {e}")
+    print(f"❌ Model Load Error: {e}")
 
 @app.route('/')
 def home():
-    # This loads the initial website with the map
     return render_template('index.html')
 
 @app.route('/predict', methods=['POST'])
 def predict():
     try:
-        # 1. Capture inputs from the AJAX request
+        # 1. Get inputs from the No-Refresh (AJAX) form
         sqft = float(request.form.get('sqft', 0))
         beds = float(request.form.get('beds', 0))
         baths = float(request.form.get('baths', 0))
-        prop_type = float(request.form.get('prop_type', 0)) # 0:Flat, 1:House, 2:Villa
-        furnish = float(request.form.get('furnish', 0))    # 0:Unfurnished, 1:Semi, 2:Full
-        
-        # Checkbox logic
+        prop_type = float(request.form.get('prop_type', 0))
+        furnish = float(request.form.get('furnish', 0))
         amenities = 1.0 if request.form.get('amenities') else 0.0
         
-        # 2. Prepare features for ML Model
+        # 2. Prepare for Prediction
         features = np.array([[sqft, beds, baths, prop_type, furnish, amenities]])
         
-        # 3. Predict
+        # 3. Calculate Price
         prediction = model.predict(features)
         val = prediction[0]
         
-        # 4. Indian Currency Logic (Lakhs vs Crores)
+        # Logic to prevent negative or tiny unrealistic values
+        if val < 5: val = sqft * 0.03 # Fallback to 3k per sqft minimum
+        
+        # 4. Format for Indian Users (Rupee Symbol + Lakh/Crore)
         if val >= 100:
             formatted_price = f"₹{round(val/100, 2)} Crore"
-        elif val > 0:
-            formatted_price = f"₹{round(val, 2)} Lakh"
         else:
-            formatted_price = "Evaluation Pending"
+            formatted_price = f"₹{round(val, 2)} Lakh"
 
-        # IMPORTANT: We return JUST the text string here. 
-        # This prevents the map from refreshing!
-        return f"Estimated Market Price: {formatted_price}"
+        # Return ONLY the text string so JavaScript can update the UI
+        return f"Estimated Market Value: {formatted_price}"
 
     except Exception as e:
-        return f"System Error: {str(e)}"
+        return f"Error: {str(e)}"
 
 if __name__ == "__main__":
-    # Required for Render Deployment
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
