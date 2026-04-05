@@ -6,7 +6,7 @@ import os
 
 app = Flask(__name__)
 
-# Load the trained model
+# Load the brain
 with open('model.pkl', 'rb') as f:
     model = pickle.load(f)
 
@@ -17,8 +17,8 @@ def home():
 @app.route('/predict', methods=['POST'])
 def predict():
     try:
-        # 1. Capture Inputs
-        sqft = float(request.form.get('sqft', 1))
+        # 1. Capture Form Data
+        sqft = float(request.form.get('sqft', 0))
         beds = float(request.form.get('beds', 0))
         baths = float(request.form.get('baths', 0))
         prop_type = float(request.form.get('prop_type', 0))
@@ -26,38 +26,38 @@ def predict():
         lat = request.form.get('lat')
         lng = request.form.get('lng')
 
-        # 2. Auto-Location & Tier Detection
-        tier = 0
-        city_name = "Rural Area"
+        # 2. Logic for Tier Detection
+        tier = 1 # Default to Standard City
+        city_name = "Selected Area"
+        
         if lat and lng:
-            geo_url = f"https://nominatim.openstreetmap.org/reverse?format=json&lat={lat}&lon={lng}"
-            response = requests.get(geo_url, headers={'User-Agent': 'Mozilla/5.0'}).json()
-            address = response.get('display_name', '').lower()
-            city_name = address.split(',')[0].title()
-            
-            if any(c in address for c in ['indore', 'ahmedabad', 'mumbai', 'surat']): tier = 2
-            elif any(c in address for c in ['jabalpur', 'bhopal', 'gwalior']): tier = 1
+            try:
+                geo_url = f"https://nominatim.openstreetmap.org/reverse?format=json&lat={lat}&lon={lng}"
+                response = requests.get(geo_url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=3).json()
+                address = response.get('display_name', '').lower()
+                city_name = address.split(',')[0].title()
+                
+                if any(c in address for c in ['indore', 'ahmedabad', 'mumbai', 'surat']): tier = 2
+                elif any(c in address for c in ['jabalpur', 'bhopal', 'gwalior']): tier = 1
+                else: tier = 0
+            except:
+                pass # Use default tier if API fails
 
-        # 3. Predict & Premium Logic
+        # 3. ML Prediction (The order must match model.py!)
         features = np.array([[sqft, beds, baths, tier, prop_type, furnish]])
         val = model.predict(features)[0]
-        if request.form.get('amenities'): val *= 1.15 # 15% Luxury Boost
+        
+        if request.form.get('amenities'): val *= 1.15
 
-        # 4. Analytics
-        rate_sqft = int((val * 100000) / sqft)
-        currency = f"₹{round(val/100, 2)} Cr" if val >= 100 else f"₹{round(val, 2)} L"
+        # 4. Final Formatting
+        currency = f"₹{round(val/100, 2)} Crore" if val >= 100 else f"₹{round(val, 2)} Lakh"
+        rate = int((val * 100000) / sqft) if sqft > 0 else 0
 
-        # Return formatted HTML for the AJAX result box
-        return f"""
-        <div style='color:#10b981; font-size:28px; font-weight:800;'>{currency}</div>
-        <div style='color:#94a3b8; font-size:14px; margin-bottom:10px;'>Detected: {city_name}</div>
-        <div style='display:flex; justify-content:space-between; border-top:1px solid #334155; pt:10px; font-size:12px;'>
-            <span>Rate: ₹{rate_sqft}/sqft</span>
-            <span>Confidence: 94%</span>
-        </div>
-        """
+        # Return string to AJAX
+        return f"<b>{city_name}</b><br><span style='color:#10b981; font-size:24px;'>{currency}</span><br>Rate: ₹{rate}/sqft"
+
     except Exception as e:
-        return f"Prediction Error: {str(e)}"
+        return f"System Error: {str(e)}"
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))

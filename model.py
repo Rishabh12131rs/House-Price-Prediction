@@ -3,8 +3,8 @@ from sklearn.ensemble import RandomForestRegressor
 import pickle
 import numpy as np
 
-# 2026 Realistic Indian Market Dataset
-# Tiers: 0:Rural, 1:Tier-2 (Jabalpur/Bhopal), 2:Tier-1 (Indore/Ahmedabad)
+# 2026 Indian Market Dataset
+# tier: 0=Rural, 1=Jabalpur/Bhopal, 2=Indore/Ahmedabad/Mumbai
 data = {
     'sqft': [600, 1000, 1200, 1500, 2000, 2500, 800, 1100, 1000, 1500, 3000, 4500, 1300, 900],
     'beds': [1, 2, 2, 3, 3, 4, 2, 2, 2, 3, 4, 5, 2, 2],
@@ -19,11 +19,12 @@ df = pd.DataFrame(data)
 X = df.drop('price', axis=1)
 y = df['price']
 
-# Random Forest is more advanced and accurate than Linear Regression
+# Train Advanced Model
 model = RandomForestRegressor(n_estimators=100, random_state=42)
 model.fit(X, y)
 
+# Save the updated brain
 with open('model.pkl', 'wb') as file:
     pickle.dump(model, file)
 
-print("🚀 Advanced Random Forest Model Trained Successfully!")
+print("✅ Advanced Model Trained with 6 Features!")
