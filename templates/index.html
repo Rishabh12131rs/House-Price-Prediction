@@ -2,202 +2,77 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bharat Estate AI | Premium Valuation</title>
+    <title>Bharat Estate AI | Elite Edition</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-        :root {
-            --primary: #4f46e5;
-            --secondary: #10b981;
-            --dark: #0f172a;
-            --glass: rgba(255, 255, 255, 0.03);
-            --border: rgba(255, 255, 255, 0.1);
-        }
-
-        body {
-            margin: 0;
-            font-family: 'Inter', sans-serif;
-            background: radial-gradient(circle at top right, #1e1b4b, #0f172a);
-            color: white;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            padding: 40px 20px;
-        }
-
-        .app-container {
-            width: 100%;
-            max-width: 1200px;
-            display: grid;
-            grid-template-columns: 400px 1fr;
-            gap: 30px;
-        }
-
-        .glass-card {
-            background: var(--glass);
-            backdrop-filter: blur(20px);
-            border: 1px solid var(--border);
-            border-radius: 24px;
-            padding: 30px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            transition: transform 0.3s ease;
-        }
-
-        h2 { font-weight: 700; margin-top: 0; background: linear-gradient(to right, #818cf8, #34d399); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-
-        /* Form Styling */
-        .input-wrapper { position: relative; margin-bottom: 20px; }
-        .input-wrapper i { position: absolute; left: 15px; top: 15px; color: #6366f1; }
-        
-        input, select {
-            width: 100%;
-            padding: 14px 14px 14px 45px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            color: white;
-            font-size: 15px;
-            transition: 0.3s;
-            outline: none;
-        }
-
-        input:focus, select:focus {
-            border-color: var(--primary);
-            background: rgba(255, 255, 255, 0.08);
-            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.2);
-        }
-
-        .btn-predict {
-            width: 100%;
-            padding: 16px;
-            background: linear-gradient(135deg, #4f46e5, #06b6d4);
-            color: white;
-            border: none;
-            border-radius: 14px;
-            font-weight: 700;
-            cursor: pointer;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: 0.3s;
-        }
-
-        .btn-predict:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(79, 70, 229, 0.4); }
-
-        /* Map Section */
-        #map { height: 500px; border-radius: 20px; border: 1px solid var(--border); }
-        .search-area { display: flex; gap: 10px; margin-bottom: 15px; }
-        
-        /* Result Display */
-        #result-box {
-            display: none;
-            margin-top: 25px;
-            padding: 20px;
-            border-radius: 16px;
-            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.1));
-            border: 1px solid var(--secondary);
-            animation: slideUp 0.5s ease-out;
-        }
-
-        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-
-        @media (max-width: 1024px) { .app-container { grid-template-columns: 1fr; } }
+        :root { --p: #6366f1; --s: #10b981; --bg: #0b0f1a; }
+        body { margin:0; font-family:'Inter',sans-serif; background:var(--bg); color:white; display:flex; justify-content:center; padding:30px; }
+        .app-grid { display:grid; grid-template-columns: 380px 1fr; gap:25px; width:100%; max-width:1200px; }
+        .card { background:rgba(255,255,255,0.03); backdrop-filter:blur(15px); border:1px solid rgba(255,255,255,0.1); border-radius:24px; padding:25px; box-shadow:0 20px 40px rgba(0,0,0,0.4); }
+        input, select { width:100%; padding:12px; margin-bottom:15px; border-radius:10px; border:1px solid #334155; background:#161b2c; color:white; box-sizing:border-box; }
+        .btn { width:100%; padding:15px; background:linear-gradient(135deg, var(--p), #a855f7); border:none; border-radius:12px; color:white; font-weight:700; cursor:pointer; transition:0.3s; }
+        #map { height:500px; border-radius:20px; border:1px solid #334155; }
+        .result-panel { display:none; margin-top:20px; padding:20px; border-radius:15px; background:rgba(16,185,129,0.05); border-left:4px solid var(--s); }
+        .search-box { display:flex; gap:10px; margin-bottom:15px; }
     </style>
 </head>
 <body>
-    <div class="app-container">
-        <div class="glass-card">
-            <h2><i class="fas fa-gem"></i> Bharat Estate AI</h2>
-            <p style="color: #94a3b8; margin-bottom: 30px;">Premium 2026 Valuation Engine</p>
-            
-            <form id="valuationForm">
-                <div class="input-wrapper"><i class="fas fa-expand-alt"></i><input type="number" name="sqft" placeholder="Super Area (Sq Ft)" required></div>
-                <div class="input-wrapper"><i class="fas fa-bed"></i><input type="number" name="beds" placeholder="Total Bedrooms" required></div>
-                <div class="input-wrapper"><i class="fas fa-bath"></i><input type="number" name="baths" placeholder="Total Bathrooms" required></div>
-                
-                <div class="input-wrapper">
-                    <i class="fas fa-building"></i>
-                    <select name="prop_type">
-                        <option value="0">Premium Apartment</option>
-                        <option value="1">Independent House</option>
-                        <option value="2">Luxury Villa / Bungalow</option>
-                    </select>
-                </div>
-
-                <div class="input-wrapper">
-                    <i class="fas fa-couch"></i>
-                    <select name="furnish">
-                        <option value="0">Unfurnished</option>
-                        <option value="1">Semi-Furnished</option>
-                        <option value="2">Fully Furnished</option>
-                    </select>
-                </div>
-
-                <label style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; cursor: pointer; font-size: 14px;">
-                    <input type="checkbox" name="amenities" style="width: auto;"> 
-                    Clubhouse, Pool & Gym Premium
-                </label>
-
+    <div class="app-grid">
+        <div class="card">
+            <h2 style="margin-top:0; color:var(--p);">SmartPrice AI</h2>
+            <form id="priceForm">
+                <input type="number" name="sqft" placeholder="Area (Sq Ft)" required>
+                <input type="number" name="beds" placeholder="Bedrooms" required>
+                <input type="number" name="baths" placeholder="Bathrooms" required>
+                <select name="prop_type">
+                    <option value="0">Apartment</option>
+                    <option value="1">Independent House</option>
+                    <option value="2">Luxury Villa</option>
+                </select>
+                <select name="furnish">
+                    <option value="0">Unfurnished</option>
+                    <option value="1">Semi-Furnished</option>
+                    <option value="2">Fully Furnished</option>
+                </select>
+                <label style="font-size:12px;"><input type="checkbox" name="amenities"> Premium Amenities</label>
                 <input type="hidden" id="lat" name="lat">
                 <input type="hidden" id="lng" name="lng">
-
-                <button type="submit" class="btn-predict">Calculate Net Worth</button>
+                <button type="submit" class="btn" style="margin-top:15px;">Analyze Valuation</button>
             </form>
-
-            <div id="result-box">
-                <div style="font-size: 14px; color: #10b981; margin-bottom: 5px;">Estimated Valuation</div>
-                <div id="price-text" style="font-size: 24px; font-weight: 800;"></div>
-                <div id="location-text" style="font-size: 12px; color: #94a3b8; margin-top: 10px;"></div>
-            </div>
+            <div id="result-panel" class="result-panel"></div>
         </div>
-
-        <div class="glass-card">
-            <div class="search-area">
-                <input type="text" id="city-search" placeholder="Enter City or Colony..." style="padding-left: 15px;">
-                <button class="search-btn" onclick="searchCity()" style="background: var(--primary); color: white; border: none; padding: 0 20px; border-radius: 12px; cursor: pointer;"><i class="fas fa-location-arrow"></i></button>
+        <div class="card">
+            <div class="search-box">
+                <input type="text" id="city-in" placeholder="Search City/Colony..." style="margin-bottom:0;">
+                <button onclick="search()" class="btn" style="width:auto; padding:0 20px;">Search</button>
             </div>
             <div id="map"></div>
-            <div style="margin-top: 15px; display: flex; gap: 20px; font-size: 12px; color: #64748b;">
-                <span><i class="fas fa-mouse-pointer"></i> Click Map to Pin</span>
-                <span><i class="fas fa-shield-alt"></i> Data Secured</span>
-            </div>
         </div>
     </div>
-
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         var map = L.map('map').setView([22.9734, 78.6569], 5);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map); // Using a dark-themed map
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
         var marker;
-
-        function searchCity() {
-            var city = document.getElementById('city-search').value;
-            fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${city}`)
-                .then(res => res.json()).then(data => {
-                    if(data.length > 0) map.flyTo([data[0].lat, data[0].lon], 15);
-                });
+        function search() {
+            var c = document.getElementById('city-in').value;
+            fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${c}`)
+                .then(r => r.json()).then(d => { if(d.length > 0) map.flyTo([d[0].lat, d[0].lon], 14); });
         }
-
         map.on('click', function(e) {
             if(marker) map.removeLayer(marker);
             marker = L.marker(e.latlng).addTo(map);
             document.getElementById('lat').value = e.latlng.lat;
             document.getElementById('lng').value = e.latlng.lng;
         });
-
-        document.getElementById('valuationForm').onsubmit = async (e) => {
+        document.getElementById('priceForm').onsubmit = async (e) => {
             e.preventDefault();
-            if(!document.getElementById('lat').value) return alert("📍 Please pin your house location on the map!");
-
-            const formData = new FormData(e.target);
-            const resBox = document.getElementById('result-box');
-            
-            const response = await fetch('/predict', { method: 'POST', body: formData });
-            const data = await response.text();
-            
-            document.getElementById('price-text').innerText = data.split('|')[1] || data;
-            document.getElementById('location-text').innerText = data.split('|')[0] || "";
-            resBox.style.display = 'block';
+            if(!document.getElementById('lat').value) return alert("Please pin location on map!");
+            const res = await fetch('/predict', { method: 'POST', body: new FormData(e.target) });
+            const data = await res.text();
+            document.getElementById('result-panel').innerHTML = data;
+            document.getElementById('result-panel').style.display = 'block';
         };
     </script>
 </body>
