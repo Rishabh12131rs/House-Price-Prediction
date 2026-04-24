@@ -2,18 +2,19 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Bharat Estate AI | 2026 Elite</title>
+    <title>Bharat Estate AI | Master Build</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         :root { --p: #6366f1; --s: #10b981; --bg: #0b0f1a; }
         body { margin:0; font-family:'Inter',sans-serif; background:var(--bg); color:white; display:flex; justify-content:center; padding:30px; }
         .container { display:grid; grid-template-columns: 380px 1fr; gap:25px; width:100%; max-width:1200px; }
-        .card { background:rgba(255,255,255,0.03); backdrop-filter:blur(15px); border:1px solid rgba(255,255,255,0.1); border-radius:24px; padding:25px; }
+        .card { background:rgba(255,255,255,0.03); backdrop-filter:blur(15px); border:1px solid rgba(255,255,255,0.1); border-radius:24px; padding:25px; box-shadow:0 20px 40px rgba(0,0,0,0.4); }
         input, select { width:100%; padding:12px; margin-bottom:15px; border-radius:10px; border:1px solid #334155; background:#161b2c; color:white; box-sizing:border-box; outline:none; }
-        .btn { width:100%; padding:15px; background:linear-gradient(135deg, var(--p), #a855f7); border:none; border-radius:12px; color:white; font-weight:700; cursor:pointer; }
+        .btn { width:100%; padding:15px; background:linear-gradient(135deg, var(--p), #a855f7); border:none; border-radius:12px; color:white; font-weight:700; cursor:pointer; transition:0.3s; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(99, 102, 241, 0.4); }
         #map { height:500px; border-radius:20px; border:1px solid #334155; }
-        #result { display:none; margin-top:20px; padding:20px; border-radius:15px; background:rgba(16,185,129,0.1); border-left:4px solid var(--s); text-align:center; }
+        #result { display:none; margin-top:20px; padding:20px; border-radius:15px; background:rgba(16,185,129,0.08); border-left:4px solid var(--s); text-align:center; }
     </style>
 </head>
 <body>
@@ -21,7 +22,7 @@
         <div class="card">
             <h2 style="margin:0 0 20px 0; color:var(--p);">SmartPrice AI</h2>
             <form id="priceForm">
-                <input type="number" name="sqft" placeholder="Sq Ft Area" required>
+                <input type="number" name="sqft" placeholder="Area (Sq Ft)" required>
                 <input type="number" name="beds" placeholder="Bedrooms" required>
                 <input type="number" name="baths" placeholder="Bathrooms" required>
                 <select name="prop_type">
@@ -43,8 +44,8 @@
         </div>
         <div class="card">
             <div style="display:flex; gap:10px; margin-bottom:15px;">
-                <input type="text" id="citySearch" placeholder="Search City..." style="margin:0;">
-                <button onclick="doSearch()" class="btn" style="width:auto; padding:0 20px;">Search</button>
+                <input type="text" id="cityIn" placeholder="Search City/Colony..." style="margin:0;">
+                <button onclick="search()" class="btn" style="width:auto; padding:0 20px;">Search</button>
             </div>
             <div id="map"></div>
         </div>
@@ -55,8 +56,8 @@
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
         var marker;
 
-        function doSearch() {
-            var c = document.getElementById('citySearch').value;
+        function search() {
+            var c = document.getElementById('cityIn').value;
             fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${c}`)
                 .then(r => r.json()).then(d => { if(d.length > 0) map.flyTo([d[0].lat, d[0].lon], 14); });
         }
@@ -70,13 +71,21 @@
 
         document.getElementById('priceForm').onsubmit = async (e) => {
             e.preventDefault();
+            const latVal = document.getElementById('lat').value;
+            
+            // VALIDATION: STOP IF NO PIN
+            if(!latVal || latVal === "") {
+                alert("📍 Please select the property location on the map first!");
+                return;
+            }
+
             const resDiv = document.getElementById('result');
-            resDiv.innerHTML = "Processing...";
+            resDiv.innerHTML = "<i class='fas fa-spinner fa-spin'></i> Geocoding & Predicting...";
             resDiv.style.display = "block";
 
             const res = await fetch('/predict', { method: 'POST', body: new FormData(e.target) });
-            const text = await res.text();
-            resDiv.innerHTML = text;
+            const data = await res.text();
+            resDiv.innerHTML = data;
         };
     </script>
 </body>
