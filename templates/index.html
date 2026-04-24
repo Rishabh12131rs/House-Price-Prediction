@@ -3,57 +3,126 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartPrice AI | 2026 Elite Build</title>
+    <title>SmartPrice AI | 2026 Elite Real Estate Engine</title>
+    
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
     <style>
-        :root { --p: #6366f1; --s: #10b981; --bg: #0b0f1a; --card: rgba(255,255,255,0.03); }
+        :root { 
+            --p: #6366f1; 
+            --s: #10b981; 
+            --bg: #0b0f1a; 
+            --card: rgba(255, 255, 255, 0.03); 
+            --border: rgba(255, 255, 255, 0.1);
+        }
         
         body { 
-            margin: 0; font-family: 'Inter', sans-serif; background: var(--bg); color: white; 
-            display: flex; justify-content: center; padding: 20px; min-height: 100vh;
+            margin: 0; 
+            font-family: 'Inter', -apple-system, sans-serif; 
+            background: var(--bg); 
+            color: white; 
+            display: flex; 
+            justify-content: center; 
+            padding: 20px; 
+            min-height: 100vh;
         }
 
         .container { 
-            display: grid; grid-template-columns: 380px 1fr; gap: 20px; 
-            width: 100%; max-width: 1250px; 
+            display: grid; 
+            grid-template-columns: 380px 1fr; 
+            gap: 20px; 
+            width: 100%; 
+            max-width: 1250px; 
         }
 
         .card { 
-            background: var(--card); backdrop-filter: blur(15px); 
-            border: 1px solid rgba(255,255,255,0.1); border-radius: 24px; 
-            padding: 25px; box-shadow: 0 20px 40px rgba(0,0,0,0.4); 
+            background: var(--card); 
+            backdrop-filter: blur(15px); 
+            border: 1px solid var(--border); 
+            border-radius: 24px; 
+            padding: 25px; 
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4); 
+            height: fit-content;
         }
 
-        h2 { margin: 0 0 20px 0; font-size: 24px; color: var(--p); display: flex; align-items: center; gap: 10px; }
+        h2 { 
+            margin: 0 0 20px 0; 
+            font-size: 24px; 
+            color: var(--p); 
+            display: flex; 
+            align-items: center; 
+            gap: 12px; 
+        }
 
         input, select { 
-            width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 10px; 
-            border: 1px solid #334155; background: #161b2c; color: white; 
-            box-sizing: border-box; outline: none; transition: 0.3s;
+            width: 100%; 
+            padding: 12px; 
+            margin-bottom: 15px; 
+            border-radius: 10px; 
+            border: 1px solid #334155; 
+            background: #161b2c; 
+            color: white; 
+            box-sizing: border-box; 
+            outline: none; 
+            transition: 0.3s;
         }
 
-        input:focus { border-color: var(--p); box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2); }
+        input:focus, select:focus { 
+            border-color: var(--p); 
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2); 
+        }
 
         .btn { 
-            width: 100%; padding: 14px; background: linear-gradient(135deg, var(--p), #a855f7); 
-            border: none; border-radius: 12px; color: white; font-weight: 700; 
-            cursor: pointer; transition: 0.3s; display: flex; justify-content: center; align-items: center; gap: 8px;
+            width: 100%; 
+            padding: 14px; 
+            background: linear-gradient(135deg, var(--p), #a855f7); 
+            border: none; 
+            border-radius: 12px; 
+            color: white; 
+            font-weight: 700; 
+            cursor: pointer; 
+            transition: 0.3s; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            gap: 8px;
         }
 
-        .btn:hover { transform: translateY(-2px); filter: brightness(1.1); }
+        .btn:hover { 
+            transform: translateY(-2px); 
+            filter: brightness(1.1); 
+            box-shadow: 0 5px 15px rgba(99, 102, 241, 0.3);
+        }
 
-        #map { height: 520px; border-radius: 20px; border: 1px solid #334155; z-index: 1; }
+        #map { 
+            height: 520px; 
+            border-radius: 20px; 
+            border: 1px solid #334155; 
+            z-index: 1; 
+        }
 
-        .search-container { display: flex; gap: 10px; margin-bottom: 15px; }
+        .search-container { 
+            display: flex; 
+            gap: 10px; 
+            margin-bottom: 15px; 
+        }
 
         #result { 
-            display: none; margin-top: 20px; padding: 20px; border-radius: 15px; 
-            background: rgba(16,185,129,0.08); border-left: 4px solid var(--s); 
-            animation: fadeIn 0.4s ease;
+            display: none; 
+            margin-top: 20px; 
+            padding: 20px; 
+            border-radius: 15px; 
+            background: rgba(16, 185, 129, 0.08); 
+            border-left: 4px solid var(--s); 
+            text-align: center;
+            animation: slideUp 0.4s ease;
         }
 
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideUp { 
+            from { opacity: 0; transform: translateY(15px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
 
         @media (max-width: 900px) { .container { grid-template-columns: 1fr; } }
     </style>
@@ -62,14 +131,14 @@
 
     <div class="container">
         <div class="card">
-            <h2><i class="fas fa-robot"></i> SmartPrice AI</h2>
+            <h2><i class="fas fa-brain"></i> SmartPrice AI</h2>
             <form id="priceForm">
                 <input type="number" name="sqft" placeholder="Super Area (Sq Ft)" required>
-                <input type="number" name="beds" placeholder="Bedrooms" required>
-                <input type="number" name="baths" placeholder="Bathrooms" required>
+                <input type="number" name="beds" placeholder="Total Bedrooms" required>
+                <input type="number" name="baths" placeholder="Total Bathrooms" required>
                 
                 <select name="prop_type">
-                    <option value="0">Apartment / Flat</option>
+                    <option value="0">Premium Apartment</option>
                     <option value="1">Independent House</option>
                     <option value="2">Luxury Villa / Bungalow</option>
                 </select>
@@ -80,9 +149,9 @@
                     <option value="2">Fully Furnished</option>
                 </select>
 
-                <label style="font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 8px; margin-bottom: 15px;">
+                <label style="font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 8px; margin-bottom: 15px; color: #94a3b8;">
                     <input type="checkbox" name="amenities" style="width: auto; margin: 0;"> 
-                    Include Premium Amenities
+                    Clubhouse & Smart Amenities
                 </label>
 
                 <input type="hidden" id="lat" name="lat">
@@ -98,29 +167,34 @@
 
         <div class="card">
             <div class="search-container">
-                <input type="text" id="cityIn" placeholder="Search City or Colony (e.g. Vijay Nagar, Indore)" style="margin:0;">
+                <input type="text" id="cityIn" placeholder="Search City or Locality (e.g. Vijay Nagar, Indore)" style="margin:0;">
                 <button onclick="search()" class="btn" id="searchBtn" style="width: auto; padding: 0 25px;">
                     <i class="fas fa-search"></i>
                 </button>
             </div>
+            
             <div id="map"></div>
-            <p style="font-size: 12px; color: #64748b; margin-top: 10px;">
-                <i class="fas fa-info-circle"></i> Click on the map to precisely pinpoint the property location.
-            </p>
+            
+            <div style="display: flex; justify-content: space-between; margin-top: 15px; font-size: 12px; color: #64748b;">
+                <span><i class="fas fa-crosshairs"></i> Precise Coordinate Mapping</span>
+                <span><i class="fas fa-database"></i> Powered by Random Forest AI</span>
+            </div>
         </div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // Initialize Map
-        var map = L.map('map').setView([22.7196, 75.8577], 5); // Default view over India
+        // 1. Initialize Map (Centered on India)
+        var map = L.map('map').setView([22.9734, 78.6569], 5);
+        
+        // Use Dark Mode Tiles
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; OpenStreetMap'
+            attribution: '&copy; OpenStreetMap &copy; CartoDB'
         }).addTo(map);
 
         var marker;
 
-        // Function to search location
+        // 2. Optimized Search Function
         function search() {
             const input = document.getElementById('cityIn');
             const btn = document.getElementById('searchBtn');
@@ -130,29 +204,34 @@
 
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
             
-            // Limit search to India for better speed and accuracy
-            fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${query}&countrycodes=in&limit=1`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data.length > 0) {
-                        const lat = data[0].lat;
-                        const lon = data[0].lon;
+            // India bounding box to prioritize local results
+            const indiaViewbox = "68.1,6.5,97.4,35.5"; 
 
-                        map.flyTo([lat, lon], 15);
+            fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&viewbox=${indiaViewbox}&bounded=0&limit=1`, {
+                headers: { 'User-Agent': 'SmartPriceAI_CollegeProject_v2' }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data && data.length > 0) {
+                    const lat = data[0].lat;
+                    const lon = data[0].lon;
 
-                        // Auto-update marker and hidden fields
-                        updateMarker(lat, lon);
-                    } else {
-                        alert("Location not found. Try adding the city name.");
-                    }
-                })
-                .catch(err => console.error(err))
-                .finally(() => {
-                    btn.innerHTML = '<i class="fas fa-search"></i>';
-                });
+                    map.flyTo([lat, lon], 15, { animate: true, duration: 1.5 });
+                    updateMarker(lat, lon);
+                } else {
+                    alert("Location not found. Please be more specific (e.g., add City name).");
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert("Search service currently busy. Please try clicking the map manually.");
+            })
+            .finally(() => {
+                btn.innerHTML = '<i class="fas fa-search"></i>';
+            });
         }
 
-        // Handle Map Clicks
+        // 3. Map Click Logic
         map.on('click', function(e) {
             updateMarker(e.latlng.lat, e.latlng.lng);
         });
@@ -164,20 +243,21 @@
             document.getElementById('lat').value = lat;
             document.getElementById('lng').value = lng;
 
+            // Handle Dragging
             marker.on('dragend', function(event) {
-                var m = event.target.getLatLng();
-                document.getElementById('lat').value = m.lat;
-                document.getElementById('lng').value = m.lng;
+                var pos = event.target.getLatLng();
+                document.getElementById('lat').value = pos.lat;
+                document.getElementById('lng').value = pos.lng;
             });
         }
 
-        // Handle Form Submission (AJAX)
+        // 4. Form Submission (AJAX)
         document.getElementById('priceForm').onsubmit = async (e) => {
             e.preventDefault();
             
-            const latCheck = document.getElementById('lat').value;
-            if (!latCheck) {
-                alert("📍 Please pin the property location on the map first!");
+            const latVal = document.getElementById('lat').value;
+            if (!latVal || latVal === "") {
+                alert("📍 Please select the property location on the map first!");
                 return;
             }
 
@@ -185,7 +265,7 @@
             const predictBtn = document.getElementById('predictBtn');
 
             resDiv.style.display = "block";
-            resDiv.innerHTML = "<i class='fas fa-circle-notch fa-spin'></i> Computing Market Value...";
+            resDiv.innerHTML = "<i class='fas fa-circle-notch fa-spin'></i> Geocoding & Processing...";
             predictBtn.disabled = true;
 
             try {
@@ -194,19 +274,19 @@
                     method: 'POST',
                     body: formData
                 });
-                const htmlResponse = await response.text();
-                resDiv.innerHTML = htmlResponse;
-            } catch (error) {
-                resDiv.innerHTML = "<span style='color:#ef4444;'>Connection Error. Try again.</span>";
+                const textResult = await response.text();
+                resDiv.innerHTML = textResult;
+            } catch (err) {
+                resDiv.innerHTML = "<span style='color:#ef4444;'>Backend Connection Failed.</span>";
             } finally {
                 predictBtn.disabled = false;
             }
         };
 
-        // Allow 'Enter' key to trigger search
-        document.getElementById('cityIn').addEventListener("keypress", function(event) {
-            if (event.key === "Enter") {
-                event.preventDefault();
+        // Support 'Enter' key for searching
+        document.getElementById('cityIn').addEventListener("keypress", function(e) {
+            if (e.key === "Enter") {
+                e.preventDefault();
                 search();
             }
         });
